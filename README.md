@@ -10,6 +10,9 @@ ssh ubuntu@$BANKING_REMOTE
 export DB_HOST=<dbHost>
 ./main >trace.log 2>error.log
 ```
+
+Application seeds database with `id=[1-1000]` with balance of `100` on start
+
 ---
 ### API
 
