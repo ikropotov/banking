@@ -2,10 +2,10 @@
 ```shell script
 # build
 env GOOS=linux go build main.go
-scp main <remoteServer>
+scp main ubuntu@$BANKING_REMOTE:
 
 # deploy
-ssh <remoteServer>
+ssh ubuntu@$BANKING_REMOTE
 # on remote
 export DB_HOST=<dbHost>
 ./main >trace.log 2>error.log
@@ -76,14 +76,16 @@ Returns `400` if `fromId == toId` or amount is negative
 Using `loadtest` tool  
 install using `npm install -g loadtest`
 ```shell script
+export BANKING_URL=http://$BANKING_REMOTE:3333
+
 cd ./loadTesting
 # Test transferring between two fixed accounts randomly continuously
-loadtest -n 15000 --rps 100 -c 5 -R deadLockCatcher.js <server_url>
+loadtest -n 10000 --rps 101 -c 5 -R deadLockCatcher.js $BANKING_URL
 
 # Test all API endpoints with random IDs (should return only 2xx)
-loadtest -n 15000 --rps 100 -c 5 -R generalNoErrTest.js <server_url>
+loadtest -n 10000 --rps 101 -c 5 -R generalNoErrTest.js $BANKING_URL
 
 # Test all endpoints with random IDs 
 # (should return some 4xx errors, amount could be negative, acc_ids could exist or be equal)
-loadtest -n 15000 --rps 100 -c 5 -R generalTest.js <server_url>
+loadtest -n 10000 --rps 101 -c 5 -R generalTest.js $BANKING_URL
 ```
