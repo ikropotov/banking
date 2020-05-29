@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
-	"github.com/ikropotov/alter/model"
+	"github.com/ikropotov/banking/model"
 )
 
 type TransResponse struct {

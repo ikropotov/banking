@@ -1,4 +1,4 @@
-module github.com/ikropotov/alter
+module github.com/ikropotov/banking
 
 go 1.14
 

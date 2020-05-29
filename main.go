@@ -8,8 +8,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
-	"github.com/ikropotov/alter/model"
-	"github.com/ikropotov/alter/utils"
+	"github.com/ikropotov/banking/model"
+	"github.com/ikropotov/banking/utils"
 	"github.com/jmoiron/sqlx"
 )
 
