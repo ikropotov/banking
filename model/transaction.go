@@ -79,7 +79,7 @@ func (trans *Trans) Exec(db *sqlx.DB) (*Acc, *Acc, error) {
 	if err != nil {
 		tx.Rollback()
 		fmt.Fprintf(os.Stderr, "AccBalanceUpdate(fromAcc, fromAccBalance, tx): %s\n", err)
-		return fromAcc, toAcc, errors.New("dest account doesn't exist")
+		return fromAcc, toAcc, errors.New("transfer error")
 	}
 
 	toAccBalance := math.Round((toAcc.Balance+trans.Amount)*100) / 100
@@ -87,7 +87,7 @@ func (trans *Trans) Exec(db *sqlx.DB) (*Acc, *Acc, error) {
 	if err != nil {
 		tx.Rollback()
 		fmt.Fprintf(os.Stderr, "AccBalanceUpdate(toAcc, toAccBalance, tx): %s\n", err)
-		return fromAcc, toAcc, errors.New("dest account doesn't exist")
+		return fromAcc, toAcc, errors.New("transfer error")
 	}
 
 	err = tx.Commit()
