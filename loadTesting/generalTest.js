@@ -3,7 +3,7 @@ module.exports = function(params, options, client, callback) {
     let acc_1 = 1 + Math.floor(Math.random()*999);
     let acc_2 = 1 + Math.floor(Math.random()*999);
     let create_id = 1 + Math.floor(Math.random()*999);
-    let amount = Math.round(Math.random()*200) / 100;
+    let amount = Math.round(Math.random()* 200 * 100) / 100;
     switch (scenario) {
         case 0:
             options.path = '/ops/transfer'

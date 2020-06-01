@@ -70,7 +70,7 @@ func (trans *Trans) Exec(db *sqlx.DB) *TransResponse {
 
 		if fromAcc.Balance < trans.Amount {
 			tx.Rollback()
-			fmt.Fprintf(os.Stderr, "fromAcc.Balance < trans.Amount: %s\n", err)
+			fmt.Fprintf(os.Stderr, "fromAcc.Balance < trans.Amount; formAcc.ID: %d\n", fromAcc.ID)
 			return &TransResponse{
 				From:    fromAcc,
 				To:      toAcc,
@@ -113,7 +113,7 @@ func (trans *Trans) Exec(db *sqlx.DB) *TransResponse {
 
 		if fromAcc.Balance < trans.Amount {
 			tx.Rollback()
-			fmt.Fprintf(os.Stderr, "fromAcc.Balance < trans.Amount: %s\n", err)
+			fmt.Fprintf(os.Stderr, "fromAcc.Balance < trans.Amount; formAcc.ID: %d\n", fromAcc.ID)
 			return &TransResponse{
 				From:    fromAcc,
 				To:      toAcc,
