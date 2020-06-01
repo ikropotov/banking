@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/go-chi/render"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -27,50 +29,96 @@ func (trans *Trans) Bind(r *http.Request) error {
 	return nil
 }
 
-func (trans *Trans) Exec(db *sqlx.DB) (*Acc, *Acc, error) {
+func (trans *Trans) Exec(db *sqlx.DB) *TransResponse {
 	tx := db.MustBegin()
 	var fromAcc, toAcc *Acc
 	var err error
+	var errCode int
 	if trans.FromID < trans.ToID {
 		fromAcc, err = GetAccForUpdate(trans.FromID, tx)
 		if err != nil {
 			tx.Rollback()
 			fmt.Fprintf(os.Stderr, "fromAcc %d GetAccForUpdate: %s \n", trans.FromID, err)
-			return nil, nil, errors.New("source account doesn't exist")
+			if NotExists(err) {
+				errCode = http.StatusNotFound
+
+			} else {
+				errCode = http.StatusInternalServerError
+			}
+			return &TransResponse{
+				From:    fromAcc,
+				To:      toAcc,
+				ErrCode: errCode,
+			}
+		}
+
+		toAcc, err = GetAccForUpdate(trans.ToID, tx)
+		if err != nil {
+			tx.Rollback()
+			fmt.Fprintf(os.Stderr, "toAcc %d GetAccForUpdate: %s\n", trans.ToID, err)
+			if NotExists(err) {
+				errCode = http.StatusNotFound
+			} else {
+				errCode = http.StatusInternalServerError
+			}
+			return &TransResponse{
+				From:    fromAcc,
+				To:      toAcc,
+				ErrCode: errCode,
+			}
 		}
 
 		if fromAcc.Balance < trans.Amount {
 			tx.Rollback()
 			fmt.Fprintf(os.Stderr, "fromAcc.Balance < trans.Amount: %s\n", err)
-			return fromAcc, nil, errors.New("source account doesn't have enough balance")
+			return &TransResponse{
+				From:    fromAcc,
+				To:      toAcc,
+				ErrCode: http.StatusNotAcceptable,
+			}
 		}
 
-		toAcc, err = GetAccForUpdate(trans.ToID, tx)
-		if err != nil {
-			tx.Rollback()
-			fmt.Fprintf(os.Stderr, "toAcc %d GetAccForUpdate: %s\n", trans.ToID, err)
-
-			return fromAcc, nil, errors.New("dest account doesn't exist")
-		}
 	} else {
 		toAcc, err = GetAccForUpdate(trans.ToID, tx)
 		if err != nil {
 			tx.Rollback()
 			fmt.Fprintf(os.Stderr, "toAcc %d GetAccForUpdate: %s\n", trans.ToID, err)
-			return nil, toAcc, errors.New("dest account doesn't exist")
+			if NotExists(err) {
+				errCode = http.StatusNotFound
+			} else {
+				errCode = http.StatusInternalServerError
+			}
+			return &TransResponse{
+				From:    fromAcc,
+				To:      toAcc,
+				ErrCode: errCode,
+			}
 		}
 
 		fromAcc, err = GetAccForUpdate(trans.FromID, tx)
 		if err != nil {
 			tx.Rollback()
 			fmt.Fprintf(os.Stderr, "fromAcc %d GetAccForUpdate: %s\n", trans.FromID, err)
-			return nil, toAcc, errors.New("source account doesn't exist")
+			if NotExists(err) {
+				errCode = http.StatusNotFound
+			} else {
+				errCode = http.StatusInternalServerError
+			}
+			return &TransResponse{
+				From:    fromAcc,
+				To:      toAcc,
+				ErrCode: errCode,
+			}
 		}
 
 		if fromAcc.Balance < trans.Amount {
 			tx.Rollback()
 			fmt.Fprintf(os.Stderr, "fromAcc.Balance < trans.Amount: %s\n", err)
-			return fromAcc, toAcc, errors.New("source account doesn't have enough balance")
+			return &TransResponse{
+				From:    fromAcc,
+				To:      toAcc,
+				ErrCode: http.StatusNotAcceptable,
+			}
 		}
 	}
 
@@ -79,7 +127,11 @@ func (trans *Trans) Exec(db *sqlx.DB) (*Acc, *Acc, error) {
 	if err != nil {
 		tx.Rollback()
 		fmt.Fprintf(os.Stderr, "AccBalanceUpdate(fromAcc, fromAccBalance, tx): %s\n", err)
-		return fromAcc, toAcc, errors.New("transfer error")
+		return &TransResponse{
+			From:    fromAcc,
+			To:      toAcc,
+			ErrCode: http.StatusInternalServerError,
+		}
 	}
 
 	toAccBalance := math.Round((toAcc.Balance+trans.Amount)*100) / 100
@@ -87,14 +139,41 @@ func (trans *Trans) Exec(db *sqlx.DB) (*Acc, *Acc, error) {
 	if err != nil {
 		tx.Rollback()
 		fmt.Fprintf(os.Stderr, "AccBalanceUpdate(toAcc, toAccBalance, tx): %s\n", err)
-		return fromAcc, toAcc, errors.New("transfer error")
+		return &TransResponse{
+			From:    fromAcc,
+			To:      toAcc,
+			ErrCode: http.StatusInternalServerError,
+		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "tx.Commit(): %s\n", err)
-		fmt.Println("TRANSACTION ERR: ", err)
+		return &TransResponse{
+			From:    fromAcc,
+			To:      toAcc,
+			ErrCode: http.StatusInternalServerError,
+		}
 	}
 
-	return fromAcc, toAcc, err
+	return &TransResponse{
+		From:    fromAcc,
+		To:      toAcc,
+		ErrCode: http.StatusAccepted,
+	}
+}
+
+type TransResponse struct {
+	From    *Acc `json:"from"`
+	To      *Acc `json:"to"`
+	ErrCode int  `json:"-"`
+}
+
+func (e *TransResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	if e.ErrCode == 0 {
+		render.Status(r, http.StatusAccepted)
+	} else {
+		render.Status(r, e.ErrCode)
+	}
+	return nil
 }

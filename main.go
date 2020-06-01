@@ -99,7 +99,6 @@ func Transfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fromAcc, toAcc, err := trans.Exec(model.GetDB(r))
-	transResp := &utils.TransResponse{fromAcc, toAcc, err}
+	transResp := trans.Exec(model.GetDB(r))
 	render.Render(w, r, render.Renderer(transResp))
 }

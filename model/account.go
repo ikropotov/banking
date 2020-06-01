@@ -42,7 +42,7 @@ func GetAcc(id int, db *sqlx.DB) (*Acc, error) {
 	obj := &Acc{}
 	sql := "SELECT * FROM accounts WHERE id=$1;"
 	if err := db.Get(obj, sql, id); err != nil {
-		if !strings.Contains(err.Error(), "no rows in result set") {
+		if !NotExists(err) {
 			fmt.Println("Select of user.id", id, ":", err)
 		}
 		return nil, err
@@ -55,13 +55,20 @@ func GetAccForUpdate(id int, tx *sqlx.Tx) (*Acc, error) {
 	obj := &Acc{}
 	sql := "SELECT * FROM accounts WHERE id=$1 FOR UPDATE;"
 	if err := tx.Get(obj, sql, id); err != nil {
-		if !strings.Contains(err.Error(), "no rows in result set") {
+		if !NotExists(err) {
 			fmt.Println("Select of user.id", id, ":", err)
 		}
 		return nil, err
 	}
 
 	return obj, nil
+}
+
+func NotExists(err error) bool {
+	if !strings.Contains(err.Error(), "no rows in result set") {
+		return false
+	}
+	return true
 }
 
 func AccBalanceUpdate(acc *Acc, newBalance float64, tx *sqlx.Tx) error {
