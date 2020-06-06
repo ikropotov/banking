@@ -83,12 +83,12 @@ export BANKING_URL=http://$BANKING_REMOTE:3333
 
 cd ./loadTesting
 # Test transferring between two fixed accounts randomly continuously
-loadtest -n 10000 --rps 101 -c 5 -R deadLockCatcher.js $BANKING_URL
+loadtest -n 10000 --rps 101 -c 5 -R deadLockCatcher.js --timeout 10000 $BANKING_URL
 
 # Test all API endpoints with random IDs (should return only 2xx)
-loadtest -n 10000 --rps 101 -c 5 -R generalNoErrTest.js $BANKING_URL
+loadtest -n 10000 --rps 101 -c 5 -R generalNoErrTest.js --timeout 10000 $BANKING_URL
 
 # Test all endpoints with random IDs 
 # (should return some 4xx errors, amount could be negative, acc_ids could exist or be equal)
-loadtest -n 10000 --rps 101 -c 5 -R generalTest.js $BANKING_URL
+loadtest -n 10000 --rps 101 -c 5 -R generalTest.js --timeout 10000 $BANKING_URL
 ```
